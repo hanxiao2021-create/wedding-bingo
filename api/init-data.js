@@ -6,40 +6,7 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-export default async function handler(req, res) {
-  // 设置 CORS 头
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
-  // 处理 OPTIONS 请求
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  
-  // 允许 GET 和 POST 请求
-  if (req.method !== 'POST' && req.method !== 'GET') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
-  
-  try {
-    // 简单测试
-    res.status(200).json({ 
-      success: true, 
-      message: 'API is working!',
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ 
-      message: 'Server error',
-      error: error.message
-    });
-  }
-}
-
-
-// 初始数据
+// 基础数据
 const INITIAL_PROMPTS = [
   { id: 1, prompt: "Ambassador of 'Please Bring Your Seat Back Upright'", prompt_cn: "“请调直座椅靠背” 推广大使", answers: ["Juliet Sam", "Jody Wong"] },
   { id: 2, prompt: "ROM Eyewitness", prompt_cn: "“二人合法”目击证人", answers: ["Ning Shan", "Xingchen Yao", "Shuyue Zhu", "Qifeng Song", "Charlie Oh", "Mei Jye Foo"] },
@@ -168,86 +135,52 @@ const DEFAULT_SETTINGS = {
 };
 
 export default async function handler(req, res) {
-if (req.method !== 'POST' && req.method !== 'GET') {
-  return res.status(405).json({ message: 'Method not allowed' });
-}
-
+  // 设置 CORS 头
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  // 处理 OPTIONS 请求
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  // 允许 GET 和 POST 请求
+  if (req.method !== 'POST' && req.method !== 'GET') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
   
   try {
-    // 初始化数据到 Redis
-    await redis.set('prompts', INITIAL_PROMPTS);
-    await redis.set('guests', INITIAL_GUESTS);
-    await redis.set('players', {});
-    await redis.set('scores', {});
-    await redis.set('settings', DEFAULT_SETTINGS);
-    await redis.set('cards', generateAllCards(INITIAL_PROMPTS));
+    console.log('Starting basic data initialization...');
     
-    res.status(200).json({ success: true, message: 'Game data initialized' });
+    // 步骤 1: 初始化基础数据
+    console.log('Setting prompts...');
+    await redis.set('prompts', INITIAL_PROMPTS);
+    
+    console.log('Setting guests...');
+    await redis.set('guests', INITIAL_GUESTS);
+    
+    console.log('Setting players...');
+    await redis.set('players', {});
+    
+    console.log('Setting scores...');
+    await redis.set('scores', {});
+    
+    console.log('Setting settings...');
+    await redis.set('settings', DEFAULT_SETTINGS);
+    
+    console.log('Basic data initialization complete!');
+    res.status(200).json({ 
+      success: true, 
+      message: 'Basic data initialized. Now visit /api/init-cards to generate cards.',
+      nextStep: '/api/init-cards'
+    });
   } catch (error) {
-    console.error('Error initializing game data:', error);
-    res.status(500).json({ message: 'Error initializing game data' });
+    console.error('Error initializing basic data:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error initializing basic data',
+      error: error.message
+    });
   }
-}
-
-function generateAllCards(prompts) {
-  const cards = {};
-  const prefixes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
-  
-  // Generate one card for each prefix
-  const prefixCards = {};
-  prefixes.forEach(prefix => {
-    prefixCards[prefix] = generateSingleCard(prompts);
-  });
-  
-  // Use the same card for all cards with the same prefix
-  prefixes.forEach(prefix => {
-    for (let i = 1; i <= 8; i++) {
-      const cardId = `${prefix}${i}`;
-      cards[cardId] = JSON.parse(JSON.stringify(prefixCards[prefix]));
-    }
-  });
-  
-  return cards;
-}
-
-function generateSingleCard(allPrompts) {
-  const shuffled = [...allPrompts].sort(() => Math.random() - 0.5);
-  const selectedPrompts = shuffled.slice(0, 24);
-  
-  const grid = [];
-  let promptIndex = 0;
-  
-  for (let row = 0; row < 5; row++) {
-    const rowCells = [];
-    for (let col = 0; col < 5; col++) {
-      if (row === 2 && col === 2) {
-        // Center cell is FREE
-        rowCells.push({
-          isFree: true,
-          completed: true,
-          prompt: null,
-          prompt_cn: null,
-          answers: []
-        });
-      } else {
-        const prompt = selectedPrompts[promptIndex];
-        rowCells.push({
-          isFree: false,
-          completed: false,
-          prompt: prompt.prompt,
-          prompt_cn: prompt.prompt_cn,
-          answers: prompt.answers,
-          promptId: prompt.id
-        });
-        promptIndex++;
-      }
-    }
-    grid.push(rowCells);
-  }
-  
-  return {
-    grid: grid,
-    bingoLines: [],
-    firstBingo: false
-  };
 }
