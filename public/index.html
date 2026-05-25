@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Bingo | 婚礼宾果</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blush-50 via-beige-50 to-sage-50">
+    <!-- Background Decorations -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-0 left-0 w-96 h-96 bg-blush-200 rounded-full filter blur-3xl opacity-30 -translate-x-1/2 -translate-y-1/2"></div>
+        <div class="absolute top-1/3 right-0 w-80 h-80 bg-sage-200 rounded-full filter blur-3xl opacity-30 translate-x-1/2"></div>
+        <div class="absolute bottom-0 left-1/3 w-72 h-72 bg-beige-200 rounded-full filter blur-3xl opacity-30 translate-y-1/2"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div id="app" class="relative z-10 min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="glass sticky top-0 z-50 border-b border-white/30">
+            <div class="container mx-auto px-4 py-3">
+                <div class="flex items-center justify-between">
+                    <h1 class="font-display text-2xl md:text-3xl font-bold text-blush-700">
+                        Wedding Bingo
+                    </h1>
+                    <div class="flex gap-2">
+                        <button onclick="showLeaderboard()" class="glass px-4 py-2 rounded-full text-sm font-medium text-sage-700 hover:bg-white/40 transition-all">
+                            <i class="fas fa-trophy mr-1"></i>
+                            <span class="hidden sm:inline">Leaderboard 排行榜</span>
+                            <span class="sm:hidden">排行榜</span>
+                        </button>
+                        <button onclick="showAdminLogin()" class="glass px-4 py-2 rounded-full text-sm font-medium text-sage-700 hover:bg-white/40 transition-all">
+                            <i class="fas fa-cog mr-1"></i>
+                            <span class="hidden sm:inline">Admin 管理</span>
+                            <span class="sm:hidden">管理</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 container mx-auto px-4 py-6">
+            <!-- Landing Page -->
+            <div id="landing-page" class="fade-in">
+                <div class="max-w-md mx-auto">
+                    <div class="glass rounded-3xl p-8 shadow-xl">
+                        <div class="text-center mb-8">
+                            <div class="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-blush-300 to-sage-300 flex items-center justify-center">
+                                <i class="fas fa-heart text-white text-4xl"></i>
+                            </div>
+                            <h2 class="font-display text-3xl font-bold text-blush-700 mb-2">Welcome</h2>
+                            <p class="text-sage-600">欢迎参加婚礼宾果游戏</p>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-sage-700 mb-2">
+                                    Card Number 卡号
+                                </label>
+                                <input type="text" id="card-input" placeholder="例如: A1, B5, C8" 
+                                    class="input-field w-full px-4 py-3 rounded-2xl text-gray-700 placeholder-gray-400 focus:outline-none">
+                            </div>
+                            
+                            <button onclick="submitCardNumber()" class="btn-primary w-full py-3 rounded-2xl text-white font-semibold shadow-lg">
+                                <i class="fas fa-arrow-right mr-2"></i>
+                                Continue 继续
+                            </button>
+                        </div>
+                        
+                        <div class="mt-6 pt-6 border-t border-white/30">
+                            <p class="text-center text-sm text-sage-600">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                请输入您座位上的 Bingo 卡号
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Registration Page -->
+            <div id="registration-page" class="hidden fade-in">
+                <div class="max-w-md mx-auto">
+                    <div class="glass rounded-3xl p-8 shadow-xl">
+                        <div class="text-center mb-6">
+                            <h2 class="font-display text-2xl font-bold text-blush-700 mb-2">Register 注册</h2>
+                            <p class="text-sage-600">Card <span id="display-card-number" class="font-semibold text-blush-600"></span></p>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-sage-700 mb-2">
+                                    Select Your Name 选择您的姓名 <span class="text-blush-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="text" id="name-search-input" placeholder="搜索您的姓名..." 
+                                        class="input-field w-full px-4 py-3 rounded-2xl text-gray-700 placeholder-gray-400 focus:outline-none"
+                                        oninput="searchGuestNames(this.value)">
+                                    <div id="guest-names-list" class="absolute z-10 w-full mt-1 glass rounded-xl max-h-60 overflow-y-auto hidden">
+                                        <!-- Guest names will be listed here -->
+                                    </div>
+                                </div>
+                                <input type="hidden" id="selected-guest-name">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-sage-700 mb-2">
+                                    Nickname 昵称 <span class="text-gray-400 text-xs">(可选)</span>
+                                </label>
+                                <input type="text" id="nickname-input" placeholder="排行榜显示的昵称" 
+                                    class="input-field w-full px-4 py-3 rounded-2xl text-gray-700 placeholder-gray-400 focus:outline-none">
+                            </div>
+                            
+                            <button onclick="submitRegistration()" class="btn-primary w-full py-3 rounded-2xl text-white font-semibold shadow-lg">
+                                <i class="fas fa-check mr-2"></i>
+                                Start Game 开始游戏
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bingo Card Page -->
+            <div id="bingo-page" class="hidden fade-in">
+                <div class="max-w-2xl mx-auto">
+                    <!-- Player Info -->
+                    <div class="glass rounded-2xl p-4 mb-4 shadow-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm text-sage-600">Player 玩家</p>
+                                <p class="font-semibold text-blush-700" id="player-name-display"></p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-sm text-sage-600">Score 积分</p>
+                                <p class="font-bold text-2xl text-blush-600" id="player-score-display">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Bingo Card -->
+                    <div class="glass rounded-3xl p-6 shadow-xl mb-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-display text-xl font-bold text-blush-700">
+                                <span id="bingo-card-number"></span>
+                            </h3>
+                            <div class="flex gap-2">
+                                <span class="glass px-3 py-1 rounded-full text-xs font-medium text-sage-700">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    <span id="completed-count">0</span>/25
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- 5x5 Grid -->
+                        <div id="bingo-grid" class="grid grid-cols-5 gap-2">
+                            <!-- Cells will be generated here -->
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex gap-3">
+                        <button onclick="showLeaderboard()" class="flex-1 glass py-3 rounded-2xl text-sage-700 font-medium hover:bg-white/40 transition-all">
+                            <i class="fas fa-trophy mr-2"></i>
+                            Leaderboard 排行榜
+                        </button>
+                        <button onclick="showVerifyPage()" class="flex-1 btn-secondary py-3 rounded-2xl text-white font-medium">
+                            <i class="fas fa-check-double mr-2"></i>
+                            Verify 验证
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Verify Page -->
+            <div id="verify-page" class="hidden fade-in">
+                <div class="max-w-md mx-auto">
+                    <div class="glass rounded-3xl p-6 shadow-xl">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="font-display text-2xl font-bold text-blush-700">
+                                Verify 验证
+                            </h2>
+                            <button onclick="hideVerifyPage()" class="glass p-2 rounded-full hover:bg-white/40 transition-all">
+                                <i class="fas fa-times text-sage-600"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-sage-700 mb-2">
+                                    Card Number 卡号
+                                </label>
+                                <input type="text" id="verify-card-input" placeholder="例如: A1" 
+                                    class="input-field w-full px-4 py-3 rounded-2xl text-gray-700 placeholder-gray-400 focus:outline-none">
+                            </div>
+                            
+                            <button onclick="loadVerifyCard()" class="btn-secondary w-full py-3 rounded-2xl text-white font-semibold">
+                                <i class="fas fa-search mr-2"></i>
+                                Load Card 加载卡片
+                            </button>
+                        </div>
+                        
+                        <!-- Card Preview -->
+                        <div id="verify-card-preview" class="hidden mt-6">
+                            <div class="border-t border-white/30 pt-4">
+                                <p class="text-sm text-sage-600 mb-2">Player: <span id="verify-player-name" class="font-semibold text-blush-700"></span></p>
+                                
+                                <div id="verify-grid" class="grid grid-cols-5 gap-1.5 mb-4">
+                                    <!-- Cells will be generated here -->
+                                </div>
+                                
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-sage-700 mb-2">
+                                            Search Guest 搜索宾客
+                                        </label>
+                                        <input type="text" id="guest-search-input" placeholder="输入姓名搜索..." 
+                                            class="input-field w-full px-4 py-3 rounded-2xl text-gray-700 placeholder-gray-400 focus:outline-none"
+                                            oninput="searchGuests(this.value)">
+                                    </div>
+                                    
+                                    <div id="guest-list" class="max-h-48 overflow-y-auto space-y-2">
+                                        <!-- Guest list will be generated here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard Page -->
+            <div id="leaderboard-page" class="hidden fade-in">
+                <div class="max-w-2xl mx-auto">
+                    <div class="glass rounded-3xl p-6 shadow-xl">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="font-display text-2xl font-bold text-blush-700">
+                                <i class="fas fa-trophy mr-2"></i>
+                                Leaderboard 排行榜
+                            </h2>
+                            <button onclick="hideLeaderboard()" class="glass p-2 rounded-full hover:bg-white/40 transition-all">
+                                <i class="fas fa-times text-sage-600"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="leaderboard-list" class="space-y-3">
+                            <!-- Leaderboard items will be generated here -->
+                        </div>
+                        
+                        <!-- Navigation Buttons -->
+                        <div class="mt-6 flex gap-3">
+                            <button onclick="hideLeaderboard()" class="flex-1 glass py-3 rounded-2xl text-sage-700 font-medium hover:bg-white/40 transition-all">
+                                <i class="fas fa-arrow-left mr-2"></i>
+                                Back to Card 返回卡片
+                            </button>
+                            <button onclick="showVerifyPage()" class="flex-1 btn-secondary py-3 rounded-2xl text-white font-medium">
+                                <i class="fas fa-check-double mr-2"></i>
+                                Verify 验证
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Page -->
+            <div id="admin-page" class="hidden fade-in">
+                <div class="max-w-4xl mx-auto">
+                    <div class="glass rounded-3xl p-6 shadow-xl">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="font-display text-2xl font-bold text-blush-700">
+                                <i class="fas fa-cog mr-2"></i>
+                                Admin Panel 管理后台
+                            </h2>
+                            <button onclick="hideAdminPage()" class="glass p-2 rounded-full hover:bg-white/40 transition-all">
+                                <i class="fas fa-times text-sage-600"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Tabs -->
+                        <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+                            <button onclick="switchAdminTab('guests')" class="admin-tab glass px-4 py-2 rounded-xl text-sm font-medium text-sage-700 whitespace-nowrap" data-tab="guests">
+                                <i class="fas fa-users mr-1"></i> Guests 宾客
+                            </button>
+                            <button onclick="switchAdminTab('prompts')" class="admin-tab glass px-4 py-2 rounded-xl text-sm font-medium text-sage-700 whitespace-nowrap" data-tab="prompts">
+                                <i class="fas fa-question-circle mr-1"></i> Prompts 题库
+                            </button>
+                            <button onclick="switchAdminTab('cards')" class="admin-tab glass px-4 py-2 rounded-xl text-sm font-medium text-sage-700 whitespace-nowrap" data-tab="cards">
+                                <i class="fas fa-th mr-1"></i> Cards 卡片
+                            </button>
+                            <button onclick="switchAdminTab('settings')" class="admin-tab glass px-4 py-2 rounded-xl text-sm font-medium text-sage-700 whitespace-nowrap" data-tab="settings">
+                                <i class="fas fa-sliders-h mr-1"></i> Settings 设置
+                            </button>
+                            <button onclick="switchAdminTab('export')" class="admin-tab glass px-4 py-2 rounded-xl text-sm font-medium text-sage-700 whitespace-nowrap" data-tab="export">
+                                <i class="fas fa-download mr-1"></i> Export 导出
+                            </button>
+                        </div>
+                        
+                        <!-- Tab Content -->
+                        <div id="admin-content">
+                            <!-- Content will be generated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="glass border-t border-white/30 py-4">
+            <div class="container mx-auto px-4 text-center">
+                <p class="text-sm text-sage-600">
+                    <i class="fas fa-heart text-blush-400 mr-1"></i>
+                    Made with love for the wedding
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-20 right-4 z-50 space-y-2"></div>
+
+    <!-- Modal Overlay -->
+    <div id="modal-overlay" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+        <div id="modal-content" class="glass rounded-3xl p-6 max-w-md w-full shadow-2xl">
+            <!-- Modal content will be generated here -->
+        </div>
+    </div>
+
+    <!-- Confetti Container -->
+    <div id="confetti-container" class="fixed inset-0 pointer-events-none z-40"></div>
+
+    <!-- Main JavaScript -->
+    <script src="js/app.js"></script>
+</body>
+</html>
