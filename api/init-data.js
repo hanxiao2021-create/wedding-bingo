@@ -7,24 +7,32 @@ const redis = new Redis({
 });
 
 export default async function handler(req, res) {
+  // 设置 CORS 头
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  // 处理 OPTIONS 请求
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
+  // 允许 GET 和 POST 请求
   if (req.method !== 'POST' && req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
   
   try {
-    // 测试 Redis 连接
-    await redis.set('test', 'Hello World');
-    const testValue = await redis.get('test');
-    
+    // 简单测试
     res.status(200).json({ 
       success: true, 
-      message: 'Redis connection successful',
-      testValue: testValue
+      message: 'API is working!',
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ 
-      message: 'Error connecting to Redis',
+      message: 'Server error',
       error: error.message
     });
   }
