@@ -1,0 +1,199 @@
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+.font-display {
+    font-family: 'Playfair Display', serif;
+}
+
+.glass {
+    background: rgba(255, 255, 255, 0.25);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-dark {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.bingo-cell {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bingo-cell:hover {
+    transform: translateY(-2px);
+}
+
+.bingo-cell.completed {
+    background: linear-gradient(135deg, rgba(255, 182, 193, 0.6), rgba(152, 251, 152, 0.6));
+    border-color: rgba(255, 182, 193, 0.8);
+}
+
+.bingo-cell.bingo-line {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(255, 182, 193, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(255, 182, 193, 0);
+    }
+}
+
+@keyframes confetti-fall {
+    0% {
+        transform: translateY(-100vh) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+.confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    background: #f00;
+    animation: confetti-fall 3s linear forwards;
+    z-index: 9999;
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.slide-up {
+    animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.score-update {
+    animation: scoreUpdate 0.6s ease-out;
+}
+
+@keyframes scoreUpdate {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+        color: #F45B7E;
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #FFA4B8, #F45B7E);
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #FFB8C9, #FF7A98);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(244, 91, 126, 0.3);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #A3B2A3, #7D917D);
+    transition: all 0.3s ease;
+}
+
+.btn-secondary:hover {
+    background: linear-gradient(135deg, #B8C5B8, #8FA38F);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(125, 145, 125, 0.3);
+}
+
+.input-field {
+    background: rgba(255, 255, 255, 0.5);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.3s ease;
+}
+
+.input-field:focus {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(255, 164, 184, 0.8);
+    box-shadow: 0 0 0 3px rgba(255, 164, 184, 0.2);
+}
+
+.modal-overlay {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+}
+
+.toast {
+    animation: toastSlide 0.3s ease-out;
+}
+
+@keyframes toastSlide {
+    from {
+        transform: translateY(-100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.leaderboard-item {
+    transition: all 0.3s ease;
+}
+
+.leaderboard-item:hover {
+    transform: translateX(5px);
+}
+
+.tab-active {
+    background: linear-gradient(135deg, rgba(255, 164, 184, 0.3), rgba(163, 178, 163, 0.3));
+    border-bottom: 3px solid #F45B7E;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 164, 184, 0.5);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 164, 184, 0.7);
+}
