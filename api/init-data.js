@@ -6,6 +6,31 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
+export default async function handler(req, res) {
+  if (req.method !== 'POST' && req.method !== 'GET') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
+  
+  try {
+    // 测试 Redis 连接
+    await redis.set('test', 'Hello World');
+    const testValue = await redis.get('test');
+    
+    res.status(200).json({ 
+      success: true, 
+      message: 'Redis connection successful',
+      testValue: testValue
+    });
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ 
+      message: 'Error connecting to Redis',
+      error: error.message
+    });
+  }
+}
+
+
 // 初始数据
 const INITIAL_PROMPTS = [
   { id: 1, prompt: "Ambassador of 'Please Bring Your Seat Back Upright'", prompt_cn: "“请调直座椅靠背” 推广大使", answers: ["Juliet Sam", "Jody Wong"] },
