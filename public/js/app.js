@@ -41,32 +41,40 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initializeData() {
-    try {
-        // 尝试从服务器获取数据
-        const response = await fetch('/api/game-data');
-        
-        if (response.ok) {
-            const data = await response.json();
-            
-            // 保存到本地存储
-            localStorage.setItem('bingo_prompts', JSON.stringify(data.prompts));
-            localStorage.setItem('bingo_guests', JSON.stringify(data.guests));
-            localStorage.setItem('bingo_players', JSON.stringify(data.players));
-            localStorage.setItem('bingo_scores', JSON.stringify(data.scores));
-            localStorage.setItem('bingo_cards', JSON.stringify(data.cards));
-            localStorage.setItem('bingo_settings', JSON.stringify(data.settings));
-        } else {
-            console.error('Failed to fetch game data from server');
-            // 如果服务器请求失败，使用本地存储的数据
-            if (!localStorage.getItem('bingo_prompts')) {
-                // 如果本地存储也没有数据，显示错误信息
-                showToast('无法加载游戏数据，请刷新页面重试', 'error');
-            }
-        }
-    } catch (error) {
-        console.error('Error initializing data:', error);
-        showToast('加载数据时出错，请刷新页面重试', 'error');
+  try {
+    // 从 API 获取游戏数据
+    const response = await fetch('/api/game-data');
+    
+    if (response.ok) {
+      const data = await response.json();
+      
+      // 保存到本地存储作为缓存
+      localStorage.setItem('bingo_prompts', JSON.stringify(data.prompts || []));
+      localStorage.setItem('bingo_guests', JSON.stringify(data.guests || []));
+      localStorage.setItem('bingo_players', JSON.stringify(data.players || {}));
+      localStorage.setItem('bingo_scores', JSON.stringify(data.scores || {}));
+      localStorage.setItem('bingo_cards', JSON.stringify(data.cards || {}));
+      localStorage.setItem('bingo_settings', JSON.stringify(data.settings || {
+        bingoLineScore: 100,
+        socialBonusScore: 20,
+        firstBingoBonus: 20,
+        fullCardBonus: 500,
+        fullCardBonusEnabled: true,
+        siteTitle: "Wedding Bingo"
+      }));
+      
+      console.log('Data loaded from server');
+    } else {
+      console.error('Failed to fetch game data from server');
+      // 如果服务器请求失败，使用本地存储的数据
+      if (!localStorage.getItem('bingo_prompts')) {
+        showToast('无法加载游戏数据，请刷新页面重试', 'error');
+      }
     }
+  } catch (error) {
+    console.error('Error initializing data:', error);
+    showToast('加载数据时出错，请刷新页面重试', 'error');
+  }
 }
 
 // ============================================
@@ -114,29 +122,30 @@ async function pollServerForUpdates() {
 }
 
 async function syncDataToServer(type, data) {
-    try {
-        const response = await fetch('/api/update-data', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                type: type,
-                data: data
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to sync data');
-        }
-        
-        // 同步成功后立即获取最新数据
-        await pollServerForUpdates();
-    } catch (error) {
-        console.error('Sync error:', error);
-        showToast('数据同步失败，请检查网络连接', 'error');
+  try {
+    const response = await fetch('/api/update-data', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: type,
+        data: data
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to sync data');
     }
+    
+    // 同步成功后立即获取最新数据
+    await pollServerForUpdates();
+  } catch (error) {
+    console.error('Sync error:', error);
+    showToast('数据同步失败，请检查网络连接', 'error');
+  }
 }
+
 
 // ============================================
 // LOCAL STORAGE FUNCTIONS
@@ -1051,33 +1060,28 @@ function switchAdminTab(tab) {
 }
 
 function renderGuestsTab(container) {
-    const guests = getGuests();
-    const players = getPlayers();
-    
+  const guests = getGuests();
+  const players = getPlayers();
+  
+  if (!guests || guests.length === 0) {
     container.innerHTML = `
-        <div class="mb-4">
-            <button onclick="showAddGuestModal()" class="btn-primary px-4 py-2 rounded-xl text-white font-medium">
-                <i class="fas fa-plus mr-2"></i>Add Guest 添加宾客
-            </button>
-        </div>
-        <div class="glass rounded-2xl overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-white/30">
-                        <tr>
-                            <th class="px-4 py-3 text-left text-sm font-semibold text-sage-700">Name 姓名</th>
-                            <th class="px-4 py-3 text-left text-sm font-semibold text-sage-700">Group 组别</th>
-                            <th class="px-4 py-3 text-left text-sm font-semibold text-sage-700">Card 卡号</th>
-                            <th class="px-4 py-3 text-right text-sm font-semibold text-sage-700">Actions 操作</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-white/30">
-                        ${guests.map((guest, index) => {
-                            const playerCard = Object.keys(players).find(card => 
-                                players[card].name.toLowerCase() === guest.name.toLowerCase()
-                            );
-                            
-                            return `
+      <div class="mb-4">
+        <button onclick="showAddGuestModal()" class="btn-primary px-4 py-2 rounded-xl text-white font-medium">
+          <i class="fas fa-plus mr-2"></i>Add Guest 添加宾客
+        </button>
+      </div>
+      <div class="text-center py-8">
+        <i class="fas fa-users text-4xl text-sage-300 mb-3"></i>
+        <p class="text-sage-600">No guests found. Please initialize data first.<br>未找到宾客，请先初始化数据。</p>
+        <p class="text-sm text-sage-500 mt-2">Visit <a href="/api/init-data" class="text-blush-600 underline">/api/init-data</a> then <a href="/api/init-cards" class="text-blush-600 underline">/api/init-cards</a></p>
+      </div>
+    `;
+    return;
+  }
+  
+
+}
+
                                 <tr class="hover:bg-white/20 transition-all">
                                     <td class="px-4 py-3 text-sm text-gray-700">${guest.name}</td>
                                     <td class="px-4 py-3 text-sm text-gray-700">${guest.group}</td>
