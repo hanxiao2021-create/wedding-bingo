@@ -7,22 +7,7 @@ const redis = new Redis({
 });
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ message: 'Method not allowed' });
-  }
-  
-  try {
-    // 从 Redis 获取分数数据
-    const scores = await redis.get('scores') || {};
-    
-    // 返回分数数据
-    res.status(200).json({ scores });
-  } catch (error) {
-    console.error('Error fetching leaderboard data:', error);
-    res.status(500).json({ message: 'Error fetching leaderboard data' });
-  }
-  
-export default async function handler(req, res) {
+  // 只允许 POST 请求
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
@@ -34,10 +19,11 @@ export default async function handler(req, res) {
   }
   
   try {
-    // 更新指定类型的数据
+    // 更新指定类型的数据到 Redis
+    // 注意：Upstash Redis SDK 会自动处理对象的 JSON 序列化
     await redis.set(type, data);
     
-    // 获取更新后的所有数据
+    // 获取更新后的所有数据以返回给前端确认
     const players = await redis.get('players') || {};
     const scores = await redis.get('scores') || {};
     const cards = await redis.get('cards') || {};
