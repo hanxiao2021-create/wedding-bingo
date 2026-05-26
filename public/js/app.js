@@ -1640,6 +1640,52 @@ function unassignCard(cardId) {
     switchAdminTab('cards');
 }
 
+async function resetGame() {
+    if (!confirm('This will DELETE ALL player data, scores, and progress. Are you sure? 这将删除所有玩家数据、积分和进度。确定要继续吗？')) {
+        return;
+    }
+
+    try {
+        showToast('Resetting game... 正在重置游戏...', 'info');
+        
+        // 1. 调用后端API重置数据
+        const response = await fetch('/api/init-data', {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            // 2. 清除本地存储
+            localStorage.removeItem('bingo_players');
+            localStorage.removeItem('bingo_scores');
+            localStorage.removeItem('bingo_cards');
+            
+            // 3. 使用服务器返回的新数据更新本地存储
+            localStorage.setItem('bingo_cards', JSON.stringify(data.gameData.cards));
+            localStorage.setItem('bingo_prompts', JSON.stringify(data.gameData.prompts));
+            localStorage.setItem('bingo_guests', JSON.stringify(data.gameData.guests));
+            localStorage.setItem('bingo_settings', JSON.stringify(data.gameData.settings));
+            
+            // 4. 重置当前状态
+            state.currentCard = null;
+            state.currentPlayer = null;
+            
+            // 5. 刷新页面以确保界面完全重置
+            showToast('Game reset successful! Refreshing... 游戏重置成功！正在刷新...', 'success');
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1500);
+            
+        } else {
+            throw new Error('Failed to reset game on server');
+        }
+    } catch (error) {
+        console.error('Error resetting game:', error);
+        showToast('Failed to reset game 重置游戏失败', 'error');
+    }
+}
+
 function regenerateAllCards() {
     if (!confirm('This will regenerate all Bingo cards and remove all player assignments. Current progress will be lost. Continue? 这将重新生成所有Bingo卡片并移除所有玩家绑定，当前进度将丢失。继续吗？')) {
         return;
@@ -1721,10 +1767,25 @@ function saveSettings() {
 function renderExportTab(container) {
     container.innerHTML = `
         <div class="space-y-4">
-            <button onclick="exportGuests()" class="w-full glass py-4 rounded-2xl text-sage-700 font-medium hover:bg-white/40 transition-all flex items-center justify-center gap-2">
-                <i class="fas fa-users"></i>
-                Export Guests 导出宾客名单
-            </button>
+            <div class="glass rounded-2xl p-4 border-2 border-red-200">
+                <h3 class="font-display text-lg font-bold text-red-600 mb-2">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>Danger Zone 危险区域
+                </h3>
+                <p class="text-sm text-gray-600 mb-4">
+                    Reset the entire game. This will delete all player progress and scores. 
+                    重置整个游戏。这将删除所有玩家进度和积分。
+                </p>
+                <button onclick="resetGame()" class="w-full bg-red-500 hover:bg-red-600 py-3 rounded-2xl text-white font-semibold transition-all">
+                    <i class="fas fa-redo mr-2"></i>Reset Game 重置游戏
+                </button>
+            </div>
+
+            <div class="border-t border-gray-200 pt-4">
+                <button onclick="exportGuests()" class="w-full glass py-4 rounded-2xl text-sage-700 font-medium hover:bg-white/40 transition-all flex items-center justify-center gap-2">
+                    <i class="fas fa-users"></i>
+                    Export Guests 导出宾客名单
+                </button>
+            </div>
             <button onclick="exportScores()" class="w-full glass py-4 rounded-2xl text-sage-700 font-medium hover:bg-white/40 transition-all flex items-center justify-center gap-2">
                 <i class="fas fa-trophy"></i>
                 Export Scores 导出积分
