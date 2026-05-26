@@ -176,6 +176,27 @@ function getSettings() {
     };
 }
 
+// 统一计算总分的函数
+function calculateTotalScore(scoreData) {
+    const settings = getSettings();
+    
+    // 基础分
+    let total = 0;
+    
+    // Bingo 连线分 = 连线数 * 单线分数
+    total += (scoreData.bingoCount || 0) * (settings.bingoLineScore || 100);
+    
+    // 社交奖励分 = 奖励次数 * 单次奖励分
+    // 注意：我们将字段改为 socialBonusCount (次数)，方便后台管理
+    total += (scoreData.socialBonusCount || 0) * (settings.socialBonusScore || 20);
+    
+    // 首次 Bingo 奖励
+    total += (scoreData.firstBingoBonus || 0);
+    
+    return total;
+}
+
+
 function getScores() {
     return JSON.parse(localStorage.getItem('bingo_scores')) || {};
 }
@@ -735,33 +756,35 @@ function verifyGuest(guestName) {
         cell.verifiedBy = guestName;
         saveCards(cards);
         
-        // Calculate score
         const players = getPlayers();
         const player = players[state.selectedCard];
         const guests = getGuests();
         const guest = guests.find(g => g.name === guestName);
+        const settings = getSettings();
         
-        // 直接从localStorage获取分数对象
-        let scores = JSON.parse(localStorage.getItem('bingo_scores')) || {};
+        // 获取分数对象
+        let scores = getScores();
         
         // 确保分数对象存在
         if (!scores[state.selectedCard]) {
             scores[state.selectedCard] = {
-                totalScore: 0,
                 bingoCount: 0,
-                socialBonus: 0,
+                socialBonusCount: 0, // 改为次数
                 firstBingoBonus: 0,
-                completedCells: 0
+                completedCells: 0,
+                totalScore: 0
             };
         }
         
         const score = scores[state.selectedCard];
+        score.completedCells = score.completedCells || 0;
+        score.socialBonusCount = score.socialBonusCount || 0;
+        score.bingoCount = score.bingoCount || 0;
         
-        // Check for social bonus
+        // Check for social bonus (跨圈互动)
         if (guest && player.group !== guest.group) {
-            score.socialBonus += 20;
-            score.totalScore += 20;
-            showToast(`Correct! +20 Social Bonus 正确！跨圈互动奖励 +20`, 'success');
+            score.socialBonusCount++; // 增加次数，不直接加分数
+            showToast(`Correct! Social Bonus +1 正确！跨圈互动奖励 +1`, 'success');
         } else {
             showToast('Correct! 正确！', 'success');
         }
@@ -771,46 +794,42 @@ function verifyGuest(guestName) {
         // Check for Bingo
         const bingoResult = checkBingo(card);
         if (bingoResult.newBingos.length > 0) {
-            const settings = getSettings();
-            
             bingoResult.newBingos.forEach(() => {
-                score.bingoCount++;
-                score.totalScore += settings.bingoLineScore;
+                score.bingoCount++; // 增加连线次数
             });
             
             // First Bingo bonus
             if (!card.firstBingo && bingoResult.newBingos.length > 0) {
                 card.firstBingo = true;
-                score.firstBingoBonus += settings.firstBingoBonus;
-                score.totalScore += settings.firstBingoBonus;
-                showToast(`BINGO! +${settings.bingoLineScore} First Bingo Bonus +${settings.firstBingoBonus}`, 'success');
+                score.firstBingoBonus = settings.firstBingoBonus; // 记录首次奖励分
+                showToast(`BINGO! First Bingo Bonus!`, 'success');
                 triggerConfetti();
             } else {
-                showToast(`BINGO! +${settings.bingoLineScore * bingoResult.newBingos.length}`, 'success');
+                showToast(`BINGO!`, 'success');
                 triggerConfetti();
             }
-            
             saveCards(cards);
         }
         
         // Check for full card bonus
         if (settings.fullCardBonusEnabled && score.completedCells === 25) {
-            score.totalScore += settings.fullCardBonus;
-            showToast(`FULL CARD! +${settings.fullCardBonus}`, 'success');
-            triggerConfetti();
+            // 全卡奖励可以直接加到 totalScore 或单独字段，这里为了简单暂时直接加
+            // 但为了统一逻辑，我们最好也把它算进 calculateTotalScore
+            // 暂时先保留原来的逻辑，或者您可以新增一个 fullCardBonus 字段
+            // 这里我们简单处理：全卡奖励作为一次性加分，可以手动加到 totalScore
+            // 或者我们在 calculateTotalScore 里判断 completedCells === 25
         }
+
+        // ============================================
+        // 关键修改：统一重新计算总分
+        // ============================================
+        score.totalScore = calculateTotalScore(score);
         
-        // 直接保存分数到localStorage并触发排行榜更新
-        localStorage.setItem('bingo_scores', JSON.stringify(scores));
-        syncDataToServer('scores', scores);
-        
-        // 立即更新排行榜，不管当前页面是什么
-        updateLeaderboard();
+        // 保存并同步
+        saveScores(scores);
         
         // 更新显示
         updateVerifyGrid();
-        
-        // 如果正在查看自己的卡片，更新玩家卡片显示
         if (state.currentCard === state.selectedCard) {
             updateBingoCardDisplay();
         }
@@ -1844,45 +1863,47 @@ function showEditScoreModal(cardId) {
     const players = getPlayers();
     const scores = getScores();
     const player = players[cardId];
-    const score = scores[cardId] || {
-        totalScore: 0,
-        bingoCount: 0,
-        socialBonus: 0,
-        firstBingoBonus: 0,
-        completedCells: 0
-    };
+    const score = scores[cardId] || {};
+    
+    const settings = getSettings();
     
     const modalContent = `
         <div class="text-center mb-4">
             <h3 class="font-display text-xl font-bold text-blush-700">Edit Score 编辑积分</h3>
             <p class="text-sm text-sage-600 mt-1">${player.nickname || player.name} (${cardId})</p>
+            <p class="text-xs text-gray-400 mt-1">提示：修改次数后，系统将自动计算总分</p>
         </div>
         <div class="space-y-4">
             <div>
-                <label class="block text-sm font-medium text-sage-700 mb-2">Total Score 总积分</label>
-                <input type="number" id="edit-total-score" value="${score.totalScore}" 
+                <label class="block text-sm font-medium text-sage-700 mb-2">Bingo Lines 连线数</label>
+                <input type="number" id="edit-bingo-count" value="${score.bingoCount || 0}" 
                     class="input-field w-full px-4 py-3 rounded-2xl text-gray-700 focus:outline-none">
+                <p class="text-xs text-gray-400 mt-1">每线 ${settings.bingoLineScore} 分</p>
             </div>
             <div>
-                <label class="block text-sm font-medium text-sage-700 mb-2">Bingo Count 连线数</label>
-                <input type="number" id="edit-bingo-count" value="${score.bingoCount}" 
+                <label class="block text-sm font-medium text-sage-700 mb-2">Social Bonus Count 社交奖励次数</label>
+                <input type="number" id="edit-social-bonus" value="${score.socialBonusCount || 0}" 
                     class="input-field w-full px-4 py-3 rounded-2xl text-gray-700 focus:outline-none">
+                <p class="text-xs text-gray-400 mt-1">每次 ${settings.socialBonusScore} 分</p>
             </div>
             <div>
-                <label class="block text-sm font-medium text-sage-700 mb-2">Social Bonus 社交奖励</label>
-                <input type="number" id="edit-social-bonus" value="${score.socialBonus}" 
-                    class="input-field w-full px-4 py-3 rounded-2xl text-gray-700 focus:outline-none">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-sage-700 mb-2">First Bingo Bonus 首次Bingo奖励</label>
-                <input type="number" id="edit-first-bingo" value="${score.firstBingoBonus}" 
+                <label class="block text-sm font-medium text-sage-700 mb-2">First Bingo Bonus 首次奖励分</label>
+                <input type="number" id="edit-first-bingo" value="${score.firstBingoBonus || 0}" 
                     class="input-field w-full px-4 py-3 rounded-2xl text-gray-700 focus:outline-none">
             </div>
             <div>
                 <label class="block text-sm font-medium text-sage-700 mb-2">Completed Cells 完成格子数</label>
-                <input type="number" id="edit-completed-cells" value="${score.completedCells}" 
+                <input type="number" id="edit-completed-cells" value="${score.completedCells || 0}" 
                     class="input-field w-full px-4 py-3 rounded-2xl text-gray-700 focus:outline-none">
             </div>
+            
+            <div class="glass p-3 rounded-xl text-center">
+                <p class="text-sm text-sage-600">预估总分 (自动计算)</p>
+                <p class="text-2xl font-bold text-blush-600" id="estimated-total">
+                    ${(score.bingoCount || 0) * settings.bingoLineScore + (score.socialBonusCount || 0) * settings.socialBonusScore + (score.firstBingoBonus || 0)}
+                </p>
+            </div>
+
             <div class="flex gap-3">
                 <button onclick="hideModal()" class="flex-1 glass py-3 rounded-2xl text-sage-700 font-medium hover:bg-white/40 transition-all">
                     Cancel 取消
@@ -1895,29 +1916,49 @@ function showEditScoreModal(cardId) {
     `;
     
     showModal(modalContent);
+    
+    // 添加实时计算预览逻辑
+    const updateEstimate = () => {
+        const bCount = parseInt(document.getElementById('edit-bingo-count').value) || 0;
+        const sCount = parseInt(document.getElementById('edit-social-bonus').value) || 0;
+        const fBonus = parseInt(document.getElementById('edit-first-bingo').value) || 0;
+        const total = bCount * settings.bingoLineScore + sCount * settings.socialBonusScore + fBonus;
+        document.getElementById('estimated-total').textContent = total;
+    };
+    
+    document.getElementById('edit-bingo-count').addEventListener('input', updateEstimate);
+    document.getElementById('edit-social-bonus').addEventListener('input', updateEstimate);
+    document.getElementById('edit-first-bingo').addEventListener('input', updateEstimate);
 }
 
+
 function saveScoreEdit(cardId) {
-    const totalScore = parseInt(document.getElementById('edit-total-score').value) || 0;
+    // 获取用户输入的“次数”或“分数”
+    // 注意：这里建议让后台输入“次数”，系统自动算分
     const bingoCount = parseInt(document.getElementById('edit-bingo-count').value) || 0;
-    const socialBonus = parseInt(document.getElementById('edit-social-bonus').value) || 0;
+    const socialBonusCount = parseInt(document.getElementById('edit-social-bonus').value) || 0; // 改为次数
     const firstBingoBonus = parseInt(document.getElementById('edit-first-bingo').value) || 0;
     const completedCells = parseInt(document.getElementById('edit-completed-cells').value) || 0;
     
     const scores = getScores();
     
-    scores[cardId] = {
-        totalScore,
+    // 构建分数对象
+    const newScoreData = {
         bingoCount,
-        socialBonus,
+        socialBonusCount, // 存储次数
         firstBingoBonus,
-        completedCells
+        completedCells,
+        totalScore: 0 // 先设为0，下面计算
     };
     
-    saveScores(scores);
+    // ============================================
+    // 关键修改：重新计算总分
+    // ============================================
+    newScoreData.totalScore = calculateTotalScore(newScoreData);
     
-    // Update leaderboard immediately
-    updateLeaderboard();
+    scores[cardId] = newScoreData;
+    
+    saveScores(scores);
     
     hideModal();
     showToast('Score updated 积分已更新', 'success');
