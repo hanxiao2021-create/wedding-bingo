@@ -1022,7 +1022,7 @@ function verifyGuest(guestName) {
         if (!scores[state.selectedCard]) {
             scores[state.selectedCard] = {
                 bingoCount: 0,
-                socialBonusCount: 0, // 改为次数
+                socialBonusCount: 0,
                 firstBingoBonus: 0,
                 completedCells: 0,
                 totalScore: 0
@@ -1033,10 +1033,11 @@ function verifyGuest(guestName) {
         score.completedCells = score.completedCells || 0;
         score.socialBonusCount = score.socialBonusCount || 0;
         score.bingoCount = score.bingoCount || 0;
+        score.firstBingoBonus = score.firstBingoBonus || 0; // 确保初始化
         
         // Check for social bonus (跨圈互动)
         if (guest && player.group !== guest.group) {
-            score.socialBonusCount++; // 增加次数，不直接加分数
+            score.socialBonusCount++; 
             showToast(`Correct! Social Bonus +1 正确！跨圈互动奖励 +1`, 'success');
         } else {
             showToast('Correct! 正确！', 'success');
@@ -1047,8 +1048,10 @@ function verifyGuest(guestName) {
         // Check for Bingo
         const bingoResult = checkBingo(card);
         if (bingoResult.newBingos.length > 0) {
+            
+            // 增加连线次数
             bingoResult.newBingos.forEach(() => {
-                score.bingoCount++; // 增加连线次数
+                score.bingoCount++;
             });
             
             // First Bingo bonus - 关键修改
@@ -1065,15 +1068,6 @@ function verifyGuest(guestName) {
             saveCards(cards);
         }
         
-        // Check for full card bonus
-        if (settings.fullCardBonusEnabled && score.completedCells === 25) {
-            // 全卡奖励可以直接加到 totalScore 或单独字段，这里为了简单暂时直接加
-            // 但为了统一逻辑，我们最好也把它算进 calculateTotalScore
-            // 暂时先保留原来的逻辑，或者您可以新增一个 fullCardBonus 字段
-            // 这里我们简单处理：全卡奖励作为一次性加分，可以手动加到 totalScore
-            // 或者我们在 calculateTotalScore 里判断 completedCells === 25
-        }
-
         // ============================================
         // 关键修改：统一重新计算总分
         // ============================================
@@ -1091,6 +1085,7 @@ function verifyGuest(guestName) {
         showToast('Incorrect answer 答案错误', 'error');
     }
 }
+
 
 // ============================================
 // BINGO CHECK FUNCTIONS
