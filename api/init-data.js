@@ -6,7 +6,7 @@ const redis = new Redis({
   token: process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-// 基础数据
+// 基础数据 (保持您原有的数据不变)
 const INITIAL_PROMPTS = [
   { id: 1, prompt: "Ambassador of 'Please Bring Your Seat Back Upright'", prompt_cn: "“请调直座椅靠背” 推广大使", answers: ["Juliet Sam", "Jody Wong"] },
   { id: 2, prompt: "ROM Eyewitness", prompt_cn: "“二人合法”目击证人", answers: ["Ning Shan", "Xingchen Yao", "Shuyue Zhu", "Qifeng Song", "Charlie Oh", "Mei Jye Foo"] },
@@ -151,35 +151,110 @@ export default async function handler(req, res) {
   }
   
   try {
-    console.log('Starting basic data initialization...');
+    console.log('Starting full game reset...');
     
-    // 步骤 1: 初始化基础数据
-    console.log('Setting prompts...');
+    // ============================================
+    // 1. 清除所有旧数据 (关键步骤)
+    // ============================================
+    console.log('Deleting old data...');
+    await redis.del('players');
+    await redis.del('scores');
+    await redis.del('cards'); // 必须删除旧卡片
+    
+    // ============================================
+    // 2. 重置基础配置
+    // ============================================
+    console.log('Setting base data (prompts, guests, settings)...');
     await redis.set('prompts', INITIAL_PROMPTS);
-    
-    console.log('Setting guests...');
     await redis.set('guests', INITIAL_GUESTS);
-    
-    console.log('Setting players...');
-    await redis.set('players', {});
-    
-    console.log('Setting scores...');
-    await redis.set('scores', {});
-    
-    console.log('Setting settings...');
     await redis.set('settings', DEFAULT_SETTINGS);
     
-    console.log('Basic data initialization complete!');
+    // ============================================
+    // 3. 重新生成卡片 (合并了 init-cards 的逻辑)
+    // ============================================
+    console.log('Regenerating cards...');
+    const cards = {};
+    const numberOfCards = 50; // 生成50张卡
+
+    for (let i = 1; i <= numberOfCards; i++) {
+      const cardId = String(i).padStart(3, '0'); // 001, 002...
+      
+      // 生成5x5格子
+      const grid = [];
+      const usedPrompts = new Set();
+      
+      for (let row = 0; row < 5; row++) {
+        const rowCells = [];
+        for (let col = 0; col < 5; col++) {
+          // 中间格子是 FREE
+          if (row === 2 && col === 2) {
+            rowCells.push({
+              isFree: true,
+              completed: true,
+              prompt: "FREE",
+              prompt_cn: "免费",
+              answers: []
+            });
+          } else {
+            // 随机选择题目
+            let promptIndex;
+            // 确保有足够的题目可用
+            if (INITIAL_PROMPTS.length > 0) {
+                do {
+                  promptIndex = Math.floor(Math.random() * INITIAL_PROMPTS.length);
+                } while (usedPrompts.has(promptIndex) && usedPrompts.size < INITIAL_PROMPTS.length);
+                
+                usedPrompts.add(promptIndex);
+                const prompt = INITIAL_PROMPTS[promptIndex];
+                
+                rowCells.push({
+                  isFree: false,
+                  completed: false,
+                  prompt: prompt.prompt,
+                  prompt_cn: prompt.prompt_cn,
+                  answers: prompt.answers,
+                  verifiedBy: null
+                });
+            } else {
+                rowCells.push({
+                    isFree: false,
+                    completed: false,
+                    prompt: "Error",
+                    prompt_cn: "错误",
+                    answers: [],
+                    verifiedBy: null
+                });
+            }
+          }
+        }
+        grid.push(rowCells);
+      }
+
+      cards[cardId] = {
+        grid,
+        bingoLines: [],
+        firstBingo: false
+      };
+    }
+
+    // 保存新卡片
+    await redis.set('cards', cards);
+    
+    console.log('Game reset complete!');
     res.status(200).json({ 
       success: true, 
-      message: 'Basic data initialized. Now visit /api/init-cards to generate cards.',
-      nextStep: '/api/init-cards'
+      message: 'Game fully reset. All data cleared and cards regenerated.',
+      stats: {
+          guestsCount: INITIAL_GUESTS.length,
+          promptsCount: INITIAL_PROMPTS.length,
+          cardsGenerated: numberOfCards
+      }
     });
   } catch (error) {
-    console.error('Error initializing basic data:', error);
+    console.error('Error resetting game:', error);
     res.status(500).json({ 
       success: false,
-      message: 'Error initializing basic data',
+      message: 'Error resetting game',
       error: error.message
     });
   }
