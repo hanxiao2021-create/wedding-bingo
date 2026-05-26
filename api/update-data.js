@@ -7,6 +7,22 @@ const redis = new Redis({
 });
 
 export default async function handler(req, res) {
+  if (req.method !== 'GET') {
+    return res.status(405).json({ message: 'Method not allowed' });
+  }
+  
+  try {
+    // 从 Redis 获取分数数据
+    const scores = await redis.get('scores') || {};
+    
+    // 返回分数数据
+    res.status(200).json({ scores });
+  } catch (error) {
+    console.error('Error fetching leaderboard data:', error);
+    res.status(500).json({ message: 'Error fetching leaderboard data' });
+  }
+  
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
