@@ -191,6 +191,11 @@ function calculateTotalScore(scoreData) {
     
     // 首次 Bingo 奖励
     total += (scoreData.firstBingoBonus || 0);
+   
+    // 4. 全卡奖励
+    if (settings.fullCardBonusEnabled && scoreData.completedCells === 25) {
+        total += (settings.fullCardBonus || 500);
+    }
     
     return total;
 }
@@ -808,12 +813,16 @@ function verifyGuest(guestName) {
                 showToast(`BINGO! First Bingo Bonus +${settings.firstBingoBonus}!`, 'success');
                 triggerConfetti();
             } else {
-                showToast(`BINGO! +${settings.bingoLineScore * bingoResult.newBingos.length}`, 'success');
+                showToast(`BINGO!`, 'success');
                 triggerConfetti();
             }
             saveCards(cards);
         }
-        
+        // 全卡奖励提示
+        if (settings.fullCardBonusEnabled && score.completedCells === 25) {
+            showToast(`FULL CARD! +${settings.fullCardBonus} 完成全卡！`, 'success');
+            triggerConfetti();
+        }
         // ============================================
         // 关键修改：统一重新计算总分
         // ============================================
