@@ -165,7 +165,7 @@ export default async function handler(req, res) {
     // 3. 重新生成卡片 (A-I 分组逻辑)
     const cards = {};
     const prefixes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
-    const cardsPerPrefix = 8; // 每组生成8张卡 (01-08)
+    const cardsPerPrefix = 8; // 每组生成8张卡 (1-8)
     
     // 循环每个字母前缀
     for (const prefix of prefixes) {
@@ -214,10 +214,10 @@ export default async function handler(req, res) {
 
       // B. 将此模板分配给该前缀下的所有卡号 (例如 A1, A2... A8)
       for (let i = 1; i <= cardsPerPrefix; i++) {
-        const cardId = `${prefix}${(i)}`; // 生成 A1 格式
+        // 修正：直接使用 i，不进行 padStart 补零
+        const cardId = `${prefix}${i}`; // 生成 A1, A2... A8 格式
         
-        // 深拷贝模板，确保每张卡有独立的状态存储
-        // 这样 A01 完成任务不会影响 A02 的状态
+        // 深拷贝模板
         const cardGridCopy = JSON.parse(JSON.stringify(templateGrid));
         
         cards[cardId] = {
@@ -236,7 +236,7 @@ export default async function handler(req, res) {
     console.log('Game reset complete!');
     res.status(200).json({ 
       success: true, 
-      message: 'Game fully reset. Cards regenerated with prefixes A-I.',
+      message: 'Game fully reset. Cards regenerated with prefixes A-I (A1-I8).',
       stats: {
           guestsCount: INITIAL_GUESTS.length,
           promptsCount: INITIAL_PROMPTS.length,
