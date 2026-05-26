@@ -1786,7 +1786,15 @@ function downloadCSV(data, filename) {
 / 更新积分榜UI
 function updateLeaderboardUI(scores) {
   // 根据scores更新UI
+  // 例如，您可以使用以下代码更新页面上的积分榜元素
+  const leaderboardContainer = document.getElementById('leaderboard-container');
+  leaderboardContainer.innerHTML = ''; // 清空现有内容
+  // 根据scores数据创建新的积分榜元素
+  // ...
+}
+
 }
 
 // 定期获取最新的积分榜数据
 setInterval(fetchLeaderboard, 5000); // 每5秒获取一次
+// ...
