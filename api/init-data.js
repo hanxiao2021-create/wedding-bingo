@@ -140,47 +140,38 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
-  // 处理 OPTIONS 请求
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
   
-  // 允许 GET 和 POST 请求
   if (req.method !== 'POST' && req.method !== 'GET') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
   
   try {
-    console.log('Starting full game reset...');
+    console.log('Starting full game reset with grouped cards...');
     
-    // ============================================
-    // 1. 清除所有旧数据 (关键步骤)
-    // ============================================
-    console.log('Deleting old data...');
+    // 1. 清除旧数据
     await redis.del('players');
     await redis.del('scores');
-    await redis.del('cards'); // 必须删除旧卡片
+    await redis.del('cards');
     
-    // ============================================
     // 2. 重置基础配置
-    // ============================================
-    console.log('Setting base data (prompts, guests, settings)...');
     await redis.set('prompts', INITIAL_PROMPTS);
     await redis.set('guests', INITIAL_GUESTS);
     await redis.set('settings', DEFAULT_SETTINGS);
     
-    // ============================================
-    // 3. 重新生成卡片 (合并了 init-cards 的逻辑)
-    // ============================================
-    console.log('Regenerating cards...');
+    // 3. 重新生成卡片 (A-I 分组逻辑)
     const cards = {};
-    const numberOfCards = 50; // 生成50张卡
-
-    for (let i = 1; i <= numberOfCards; i++) {
-      const cardId = String(i).padStart(3, '0'); // 001, 002...
+    const prefixes = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'];
+    const cardsPerPrefix = 8; // 每组生成8张卡 (01-08)
+    
+    // 循环每个字母前缀
+    for (const prefix of prefixes) {
+      console.log(`Generating cards for prefix ${prefix}...`);
       
-      // 生成5x5格子
-      const grid = [];
+      // A. 为此前缀生成一个唯一的网格模板
+      const templateGrid = [];
       const usedPrompts = new Set();
       
       for (let row = 0; row < 5; row++) {
@@ -198,56 +189,57 @@ export default async function handler(req, res) {
           } else {
             // 随机选择题目
             let promptIndex;
-            // 确保有足够的题目可用
             if (INITIAL_PROMPTS.length > 0) {
-                do {
-                  promptIndex = Math.floor(Math.random() * INITIAL_PROMPTS.length);
-                } while (usedPrompts.has(promptIndex) && usedPrompts.size < INITIAL_PROMPTS.length);
-                
-                usedPrompts.add(promptIndex);
-                const prompt = INITIAL_PROMPTS[promptIndex];
-                
-                rowCells.push({
-                  isFree: false,
-                  completed: false,
-                  prompt: prompt.prompt,
-                  prompt_cn: prompt.prompt_cn,
-                  answers: prompt.answers,
-                  verifiedBy: null
-                });
-            } else {
-                rowCells.push({
-                    isFree: false,
-                    completed: false,
-                    prompt: "Error",
-                    prompt_cn: "错误",
-                    answers: [],
-                    verifiedBy: null
-                });
+              do {
+                promptIndex = Math.floor(Math.random() * INITIAL_PROMPTS.length);
+              } while (usedPrompts.has(promptIndex) && usedPrompts.size < INITIAL_PROMPTS.length);
+              
+              usedPrompts.add(promptIndex);
+              const prompt = INITIAL_PROMPTS[promptIndex];
+              
+              rowCells.push({
+                isFree: false,
+                completed: false,
+                prompt: prompt.prompt,
+                prompt_cn: prompt.prompt_cn,
+                answers: prompt.answers,
+                verifiedBy: null
+              });
             }
           }
         }
-        grid.push(rowCells);
+        templateGrid.push(rowCells);
       }
 
-      cards[cardId] = {
-        grid,
-        bingoLines: [],
-        firstBingo: false
-      };
+      // B. 将此模板分配给该前缀下的所有卡号 (例如 A01, A02... A08)
+      for (let i = 1; i <= cardsPerPrefix; i++) {
+        const cardId = `${prefix}${String(i).padStart(2, '0')}`; // 生成 A01 格式
+        
+        // 深拷贝模板，确保每张卡有独立的状态存储
+        // 这样 A01 完成任务不会影响 A02 的状态
+        const cardGridCopy = JSON.parse(JSON.stringify(templateGrid));
+        
+        cards[cardId] = {
+          grid: cardGridCopy,
+          bingoLines: [],
+          firstBingo: false
+        };
+      }
     }
 
-    // 保存新卡片
+    // 保存所有卡片
     await redis.set('cards', cards);
+    
+    const totalCards = prefixes.length * cardsPerPrefix;
     
     console.log('Game reset complete!');
     res.status(200).json({ 
       success: true, 
-      message: 'Game fully reset. All data cleared and cards regenerated.',
+      message: 'Game fully reset. Cards regenerated with prefixes A-I.',
       stats: {
           guestsCount: INITIAL_GUESTS.length,
           promptsCount: INITIAL_PROMPTS.length,
-          cardsGenerated: numberOfCards
+          cardsGenerated: totalCards
       }
     });
   } catch (error) {
