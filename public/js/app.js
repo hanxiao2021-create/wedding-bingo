@@ -145,21 +145,6 @@ async function syncDataToServer(type, data) {
     }
 }
 
-// 获取最新的积分榜数据
-async function fetchLeaderboard() {
-  try {
-    const response = await fetch('/api/get-leaderboard');
-    if (response.ok) {
-      const data = await response.json();
-      updateLeaderboardUI(data.scores);
-    } else {
-      console.error('Failed to fetch leaderboard data');
-    }
-  } catch (error) {
-    console.error('Error fetching leaderboard data:', error);
-  }
-}
-
 // ============================================
 // LOCAL STORAGE FUNCTIONS
 // ============================================
@@ -1782,19 +1767,3 @@ function downloadCSV(data, filename) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
-
-/ 更新积分榜UI
-function updateLeaderboardUI(scores) {
-  // 根据scores更新UI
-  // 例如，您可以使用以下代码更新页面上的积分榜元素
-  const leaderboardContainer = document.getElementById('leaderboard-container');
-  leaderboardContainer.innerHTML = ''; // 清空现有内容
-  // 根据scores数据创建新的积分榜元素
-  // ...
-}
-
-}
-
-// 定期获取最新的积分榜数据
-setInterval(fetchLeaderboard, 5000); // 每5秒获取一次
-// ...
