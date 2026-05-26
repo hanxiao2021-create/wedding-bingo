@@ -212,9 +212,9 @@ export default async function handler(req, res) {
         templateGrid.push(rowCells);
       }
 
-      // B. 将此模板分配给该前缀下的所有卡号 (例如 A01, A02... A08)
+      // B. 将此模板分配给该前缀下的所有卡号 (例如 A1, A2... A8)
       for (let i = 1; i <= cardsPerPrefix; i++) {
-        const cardId = `${prefix}${String(i).padStart(2, '0')}`; // 生成 A01 格式
+        const cardId = `${prefix}${(i)}`; // 生成 A1 格式
         
         // 深拷贝模板，确保每张卡有独立的状态存储
         // 这样 A01 完成任务不会影响 A02 的状态
