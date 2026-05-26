@@ -1782,3 +1782,11 @@ function downloadCSV(data, filename) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
+
+/ 更新积分榜UI
+function updateLeaderboardUI(scores) {
+  // 根据scores更新UI
+}
+
+// 定期获取最新的积分榜数据
+setInterval(fetchLeaderboard, 5000); // 每5秒获取一次
