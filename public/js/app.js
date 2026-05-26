@@ -145,6 +145,21 @@ async function syncDataToServer(type, data) {
     }
 }
 
+// 获取最新的积分榜数据
+async function fetchLeaderboard() {
+  try {
+    const response = await fetch('/api/get-leaderboard');
+    if (response.ok) {
+      const data = await response.json();
+      updateLeaderboardUI(data.scores);
+    } else {
+      console.error('Failed to fetch leaderboard data');
+    }
+  } catch (error) {
+    console.error('Error fetching leaderboard data:', error);
+  }
+}
+
 // ============================================
 // LOCAL STORAGE FUNCTIONS
 // ============================================
