@@ -129,6 +129,7 @@ const DEFAULT_SETTINGS = {
   bingoLineScore: 100,
   socialBonusScore: 20,
   firstBingoBonus: 20,
+  firstCellBonus: 10, // 新增：首格奖励分数
   fullCardBonus: 500,
   fullCardBonusEnabled: true,
   siteTitle: "Wedding Bingo"
