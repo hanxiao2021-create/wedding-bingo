@@ -803,7 +803,9 @@ function verifyGuest(guestName) {
         // 直接保存分数到localStorage并触发排行榜更新
         localStorage.setItem('bingo_scores', JSON.stringify(scores));
         syncDataToServer('scores', scores);
-        updateLeaderboardIfVisible();
+        
+        // 立即更新排行榜，不管当前页面是什么
+        updateLeaderboard();
         
         // 更新显示
         updateVerifyGrid();
@@ -1062,6 +1064,7 @@ function switchAdminTab(tab) {
 function renderGuestsTab(container) {
     const guests = getGuests();
     const players = getPlayers();
+    const scores = getScores();
     
     container.innerHTML = `
         <div class="mb-4">
@@ -1077,6 +1080,7 @@ function renderGuestsTab(container) {
                             <th class="px-4 py-3 text-left text-sm font-semibold text-sage-700">Name 姓名</th>
                             <th class="px-4 py-3 text-left text-sm font-semibold text-sage-700">Group 组别</th>
                             <th class="px-4 py-3 text-left text-sm font-semibold text-sage-700">Card 卡号</th>
+                            <th class="px-4 py-3 text-left text-sm font-semibold text-sage-700">Score 积分</th>
                             <th class="px-4 py-3 text-right text-sm font-semibold text-sage-700">Actions 操作</th>
                         </tr>
                     </thead>
@@ -1085,6 +1089,8 @@ function renderGuestsTab(container) {
                             const playerCard = Object.keys(players).find(card => 
                                 players[card].name.toLowerCase() === guest.name.toLowerCase()
                             );
+                            
+                            const playerScore = playerCard ? (scores[playerCard] ? scores[playerCard].totalScore : 0) : 0;
                             
                             return `
                                 <tr class="hover:bg-white/20 transition-all">
@@ -1096,6 +1102,15 @@ function renderGuestsTab(container) {
                                             `<button onclick="showAssignCardModal('${guest.name}')" class="text-xs text-sage-600 hover:text-sage-800 underline">
                                                 Assign Card 分配卡号
                                             </button>`
+                                        }
+                                    </td>
+                                    <td class="px-4 py-3 text-sm text-gray-700">
+                                        ${playerCard ? 
+                                            `<span class="font-medium text-blush-700">${playerScore}</span>
+                                            <button onclick="showEditScoreModal('${playerCard}')" class="ml-2 text-xs text-sage-600 hover:text-sage-800">
+                                                <i class="fas fa-edit"></i>
+                                            </button>` : 
+                                            `<span class="text-gray-400">-</span>`
                                         }
                                     </td>
                                     <td class="px-4 py-3 text-right">
@@ -1303,8 +1318,35 @@ function assignCardToGuest(guestName) {
     
     // Save player
     const players = getPlayers();
+    
+    // Check if this card was previously assigned to another player
+    let previousPlayerName = null;
+    if (players[cardId]) {
+        previousPlayerName = players[cardId].name;
+    }
+    
     players[cardId] = player;
     savePlayers(players);
+    
+    // Reset card verification results
+    const cards = getCards();
+    if (cards[cardId]) {
+        // Reset all cells to not completed
+        for (let row = 0; row < 5; row++) {
+            for (let col = 0; col < 5; col++) {
+                if (!cards[cardId].grid[row][col].isFree) {
+                    cards[cardId].grid[row][col].completed = false;
+                    cards[cardId].grid[row][col].verifiedBy = null;
+                }
+            }
+        }
+        
+        // Reset bingo lines
+        cards[cardId].bingoLines = [];
+        cards[cardId].firstBingo = false;
+        
+        saveCards(cards);
+    }
     
     // Initialize score
     const scores = getScores();
@@ -1317,8 +1359,17 @@ function assignCardToGuest(guestName) {
     };
     saveScores(scores);
     
+    // Update leaderboard immediately
+    updateLeaderboard();
+    
     hideModal();
-    showToast(`Card ${cardId} assigned to ${guestName} 卡号 ${cardId} 已分配给 ${guestName}`, 'success');
+    
+    if (previousPlayerName) {
+        showToast(`Card ${cardId} reassigned from ${previousPlayerName} to ${guestName}. All progress has been reset. 卡号 ${cardId} 已从 ${previousPlayerName} 重新分配给 ${guestName}，所有进度已重置`, 'success');
+    } else {
+        showToast(`Card ${cardId} assigned to ${guestName} 卡号 ${cardId} 已分配给 ${guestName}`, 'success');
+    }
+    
     switchAdminTab('guests');
 }
 
@@ -1536,15 +1587,37 @@ function unassignCard(cardId) {
     
     const players = getPlayers();
     const scores = getScores();
+    const cards = getCards();
     
     // Remove player and score
     delete players[cardId];
     delete scores[cardId];
     
+    // Reset card verification results
+    if (cards[cardId]) {
+        // Reset all cells to not completed
+        for (let row = 0; row < 5; row++) {
+            for (let col = 0; col < 5; col++) {
+                if (!cards[cardId].grid[row][col].isFree) {
+                    cards[cardId].grid[row][col].completed = false;
+                    cards[cardId].grid[row][col].verifiedBy = null;
+                }
+            }
+        }
+        
+        // Reset bingo lines
+        cards[cardId].bingoLines = [];
+        cards[cardId].firstBingo = false;
+    }
+    
     savePlayers(players);
     saveScores(scores);
+    saveCards(cards);
     
-    showToast(`Card ${cardId} unassigned 卡号 ${cardId} 已解除绑定`, 'success');
+    // Update leaderboard immediately
+    updateLeaderboard();
+    
+    showToast(`Card ${cardId} unassigned and reset 卡号 ${cardId} 已解除绑定并重置`, 'success');
     switchAdminTab('cards');
 }
 
@@ -1766,4 +1839,87 @@ function downloadCSV(data, filename) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+}
+function showEditScoreModal(cardId) {
+    const players = getPlayers();
+    const scores = getScores();
+    const player = players[cardId];
+    const score = scores[cardId] || {
+        totalScore: 0,
+        bingoCount: 0,
+        socialBonus: 0,
+        firstBingoBonus: 0,
+        completedCells: 0
+    };
+    
+    const modalContent = `
+        <div class="text-center mb-4">
+            <h3 class="font-display text-xl font-bold text-blush-700">Edit Score 编辑积分</h3>
+            <p class="text-sm text-sage-600 mt-1">${player.nickname || player.name} (${cardId})</p>
+        </div>
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-sage-700 mb-2">Total Score 总积分</label>
+                <input type="number" id="edit-total-score" value="${score.totalScore}" 
+                    class="input-field w-full px-4 py-3 rounded-2xl text-gray-700 focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-sage-700 mb-2">Bingo Count 连线数</label>
+                <input type="number" id="edit-bingo-count" value="${score.bingoCount}" 
+                    class="input-field w-full px-4 py-3 rounded-2xl text-gray-700 focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-sage-700 mb-2">Social Bonus 社交奖励</label>
+                <input type="number" id="edit-social-bonus" value="${score.socialBonus}" 
+                    class="input-field w-full px-4 py-3 rounded-2xl text-gray-700 focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-sage-700 mb-2">First Bingo Bonus 首次Bingo奖励</label>
+                <input type="number" id="edit-first-bingo" value="${score.firstBingoBonus}" 
+                    class="input-field w-full px-4 py-3 rounded-2xl text-gray-700 focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-sage-700 mb-2">Completed Cells 完成格子数</label>
+                <input type="number" id="edit-completed-cells" value="${score.completedCells}" 
+                    class="input-field w-full px-4 py-3 rounded-2xl text-gray-700 focus:outline-none">
+            </div>
+            <div class="flex gap-3">
+                <button onclick="hideModal()" class="flex-1 glass py-3 rounded-2xl text-sage-700 font-medium hover:bg-white/40 transition-all">
+                    Cancel 取消
+                </button>
+                <button onclick="saveScoreEdit('${cardId}')" class="flex-1 btn-primary py-3 rounded-2xl text-white font-semibold">
+                    Save 保存
+                </button>
+            </div>
+        </div>
+    `;
+    
+    showModal(modalContent);
+}
+
+function saveScoreEdit(cardId) {
+    const totalScore = parseInt(document.getElementById('edit-total-score').value) || 0;
+    const bingoCount = parseInt(document.getElementById('edit-bingo-count').value) || 0;
+    const socialBonus = parseInt(document.getElementById('edit-social-bonus').value) || 0;
+    const firstBingoBonus = parseInt(document.getElementById('edit-first-bingo').value) || 0;
+    const completedCells = parseInt(document.getElementById('edit-completed-cells').value) || 0;
+    
+    const scores = getScores();
+    
+    scores[cardId] = {
+        totalScore,
+        bingoCount,
+        socialBonus,
+        firstBingoBonus,
+        completedCells
+    };
+    
+    saveScores(scores);
+    
+    // Update leaderboard immediately
+    updateLeaderboard();
+    
+    hideModal();
+    showToast('Score updated 积分已更新', 'success');
+    switchAdminTab('guests');
 }
