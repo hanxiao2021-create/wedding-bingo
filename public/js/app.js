@@ -882,7 +882,7 @@ function verifyGuest(guestName) {
         // ============================================
         // 1. 新增：首格奖励判定 (在 completedCells 增加之前判定)
         // ============================================
-        if (score.completedCells === 0) {
+        if (score.completedCells === 1 && !score.firstCellBonus) {
             score.firstCellBonus = settings.firstCellBonus || 0;
             showToast(`First Cell Bonus +${score.firstCellBonus}! 首格奖励!`, 'success');
         }
@@ -890,10 +890,13 @@ function verifyGuest(guestName) {
         // 检查社交奖励
         if (guest && player.group !== guest.group) {
             score.socialBonusCount++;
-            showToast(`Correct! Social Bonus +1 正确！跨圈互动奖励 +1`, 'success');
+            // 这里的逻辑稍微调整一下，避免提示冲突
+            if (score.completedCells !== 1) { // 如果不是首格，才单独提示社交分
+                 showToast(`Correct! Social Bonus +1 正确！跨圈互动奖励 +1`, 'success');
+            }
+            // 如果是首格，上面已经提示过首格奖励了，这里就不重复提示了，或者您可以合并提示
         } else {
-            // 如果不是首格，也不跨圈，只提示正确
-            if (score.completedCells !== 0) {
+            if (score.completedCells !== 1) { // 如果不是首格
                 showToast('Correct! 正确！', 'success');
             }
         }
