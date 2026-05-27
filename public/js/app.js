@@ -96,23 +96,33 @@ function stopServerPolling() {
 
 async function pollServerForUpdates() {
     try {
-        const response = await fetch('/api/game-data');
+        // ============================================
+        // 优化：调用轻量级接口，只获取动态数据
+        // ============================================
+        const response = await fetch('/api/live-data');
         
         if (!response.ok) {
-            throw new Error('Failed to fetch data');
+            throw new Error('Failed to fetch live data');
         }
         
         const data = await response.json();
         
-        // 更新本地存储
+        // 只更新动态数据
         localStorage.setItem('bingo_players', JSON.stringify(data.players || {}));
         localStorage.setItem('bingo_scores', JSON.stringify(data.scores || {}));
-        localStorage.setItem('bingo_cards', JSON.stringify(data.cards || {}));
         
-        // 更新UI
+        // 更新UI (积分榜和当前卡片显示)
         updateLeaderboardIfVisible();
+        
+        // 注意：我们不再在轮询中更新 cards
+        // 如果需要跨设备同步卡片进度，可以保留 cards 的更新，但会增加流量
+        // 对于婚礼场景，通常单设备操作，建议移除 cards 轮询以节省流量
         if (state.currentCard) {
-            updateBingoCardDisplay();
+            // 仅更新分数显示，不重新渲染整个卡片网格
+            const score = data.scores[state.currentCard];
+            if (score) {
+                document.getElementById('player-score-display').textContent = score.totalScore;
+            }
         }
     } catch (error) {
         console.error('Polling error:', error);
