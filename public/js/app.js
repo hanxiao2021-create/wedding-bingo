@@ -83,8 +83,8 @@ function startServerPolling() {
     // 立即执行一次
     pollServerForUpdates();
     
-    // 设置轮询间隔（每3秒）
-    state.serverPollingInterval = setInterval(pollServerForUpdates, 30000);
+    // 设置轮询间隔（每20秒）
+    state.serverPollingInterval = setInterval(pollServerForUpdates, 20000);
 }
 
 function stopServerPolling() {
