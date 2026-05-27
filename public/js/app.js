@@ -1892,6 +1892,25 @@ function saveSettings() {
     
     saveSettings(settings);
     showToast('Settings saved 设置已保存', 'success');
+    // ============================================
+    // 2. 新增：根据新设置重新计算所有玩家的分数
+    // ============================================
+    const scores = getScores();
+    let updatedCount = 0;
+    
+    Object.keys(scores).forEach(cardId => {
+        // 重新计算总分
+        scores[cardId].totalScore = calculateTotalScore(scores[cardId]);
+        updatedCount++;
+    });
+    
+    // 3. 保存更新后的分数
+    if (updatedCount > 0) {
+        saveScores(scores);
+        showToast(`Settings saved. ${updatedCount} scores updated. 设置已保存，${updatedCount} 位玩家积分已更新`, 'success');
+    } else {
+        showToast('Settings saved 设置已保存', 'success');
+    }
 }
 
 
