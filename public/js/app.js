@@ -729,8 +729,11 @@ function selectVerifyCell(row, col) {
     const card = cards[state.selectedCard];
     const cell = card.grid[row][col];
     
-    showToast(`Selected: ${cell.prompt_cn}`, 'info');
+    // 修改：同时显示英文和中文
+    // 使用 <br> 换行，因为 showToast 支持 HTML
+    showToast(`Selected: ${cell.prompt}<br>${cell.prompt_cn}`, 'info');
 }
+
 
 function searchGuests(query) {
     const guests = getGuests();
