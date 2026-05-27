@@ -986,7 +986,11 @@ function updateLeaderboard() {
         
         return {
             name: player.nickname || player.name,
-            ...score
+            totalScore: score.totalScore || 0,
+            bingoCount: score.bingoCount || 0,
+            completedCells: score.completedCells || 0,
+            // 获取次数，如果没有则尝试从旧字段转换，都没有则为 0
+            socialBonusCount: score.socialBonusCount || 0
         };
     });
     
@@ -1012,6 +1016,10 @@ function updateLeaderboard() {
         const medalIcon = index === 0 ? 'fa-crown text-yellow-500' : 
                          index === 1 ? 'fa-medal text-gray-400' : 
                          index === 2 ? 'fa-medal text-amber-600' : '';
+        // ============================================
+        // 修正：直接显示次数
+        // ============================================
+        const socialCount = player.socialBonusCount || 0;
         
         itemDiv.innerHTML = `
             <div class="flex items-center gap-4">
