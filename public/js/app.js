@@ -206,7 +206,7 @@ function calculateTotalScore(scoreData) {
     total += (scoreData.firstCellBonus || 0);
    
     // 4. 全卡奖励
-    if (settings.fullCardBonusEnabled && scoreData.completedCells === 24) {
+    if (settings.fullCardBonusEnabled && scoreData.completedCells === 25) {
         total += (settings.fullCardBonus || 500);
     }
     
@@ -530,9 +530,9 @@ function submitRegistration() {
     scores[state.currentCard] = {
         totalScore: 0,
         bingoCount: 0,
-        socialBonus: 0,
+        socialBonusCount: 0,
         firstBingoBonus: 0,
-        completedCells: 0
+        completedCells: 1
     };
     saveScores(scores);
     
@@ -859,7 +859,7 @@ function verifyGuest(guestName) {
             saveCards(cards);
         }
         // 全卡奖励提示
-        if (settings.fullCardBonusEnabled && score.completedCells === 24) {
+        if (settings.fullCardBonusEnabled && score.completedCells === 25) {
             showToast(`FULL CARD! +${settings.fullCardBonus} 完成全卡！`, 'success');
             triggerConfetti();
         }
@@ -979,7 +979,7 @@ function updateLeaderboard() {
         const score = scores[cardNumber] || {
             totalScore: 0,
             bingoCount: 0,
-            socialBonus: 0,
+            socialBonusCount: 0,
             firstBingoBonus: 0,
             completedCells: 0
         };
@@ -1035,7 +1035,7 @@ function updateLeaderboard() {
                     <div class="flex items-center gap-3 text-xs text-sage-600">
                         <span><i class="fas fa-check-circle mr-1"></i>${player.completedCells}/25</span>
                         <span><i class="fas fa-star mr-1"></i>${player.bingoCount} Bingo</span>
-                        <span><i class="fas fa-users mr-1"></i>${player.socialBonus} 社交分</span>
+                        <span><i class="fas fa-users mr-1"></i>${player.socialBonusCount} 社交加分次数</span>
                     </div>
                 </div>
                 <div class="text-right">
@@ -1424,9 +1424,9 @@ function assignCardToGuest(guestName) {
     scores[cardId] = {
         totalScore: 0,
         bingoCount: 0,
-        socialBonus: 0,
+        socialBonusCount: 0,
         firstBingoBonus: 0,
-        completedCells: 0
+        completedCells: 1
     };
     saveScores(scores);
     
