@@ -442,17 +442,76 @@ function submitCardNumber() {
         return;
     }
     
-    // Check if card is already registered
     const players = getPlayers();
+    // ============================================
+    // 修改：检查卡号是否已被注册
+    // ============================================
     if (players[cardNumber]) {
-        // Card already registered, load player
-        state.currentCard = cardNumber;
-        state.currentPlayer = players[cardNumber];
-        showBingoCard();
+        const player = players[cardNumber];
+        
+        // 1. 检查本地存储是否已经登录过（自动登录逻辑）
+        const myCard = localStorage.getItem('bingo_my_card');
+        if (myCard === cardNumber) {
+            // 是同一个设备同一个浏览器，直接进入
+            state.currentCard = cardNumber;
+            state.currentPlayer = player;
+            showBingoCard();
+            return;
+        }
+
+        // 2. 如果是其他设备或新用户，弹出身份确认
+        showIdentityConfirmation(cardNumber, player.name);
+        
     } else {
-        // New registration
+        // 卡号未被注册，进入注册流程
         state.currentCard = cardNumber;
         showRegistration(cardNumber);
+    }
+}
+
+function showIdentityConfirmation(cardNumber, playerName) {
+    const modalContent = `
+        <div class="text-center mb-4">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-blush-300 to-sage-300 flex items-center justify-center">
+                <i class="fas fa-user-lock text-white text-2xl"></i>
+            </div>
+            <h3 class="font-display text-xl font-bold text-blush-700">Card Already Registered 卡片已被注册</h3>
+            <p class="text-sm text-sage-600 mt-2">This card belongs to <strong>${playerName}</strong>.</p>
+            <p class="text-sm text-sage-600">这张卡属于 <strong>${playerName}</strong>。</p>
+        </div>
+        <div class="space-y-4">
+            <p class="text-center text-gray-700">Are you <strong>${playerName}</strong>?<br>你是 <strong>${playerName}</strong> 吗？</p>
+            <div class="flex gap-3">
+                <button onclick="hideModal()" class="flex-1 glass py-3 rounded-2xl text-sage-700 font-medium hover:bg-white/40 transition-all">
+                    No, go back 不是，返回
+                </button>
+                <button onclick="confirmIdentity('${cardNumber}')" class="flex-1 btn-primary py-3 rounded-2xl text-white font-semibold">
+                    Yes, it's me 是的
+                </button>
+            </div>
+        </div>
+    `;
+    
+    showModal(modalContent);
+}
+
+function confirmIdentity(cardNumber) {
+    const players = getPlayers();
+    const player = players[cardNumber];
+    
+    if (player) {
+        // 确认身份成功，保存到本地以便下次自动登录
+        localStorage.setItem('bingo_my_card', cardNumber);
+        
+        state.currentCard = cardNumber;
+        state.currentPlayer = player;
+        
+        hideModal();
+        showBingoCard();
+        showToast('Login successful 登录成功', 'success');
+    } else {
+        hideModal();
+        showToast('Error: Player data not found 错误：找不到玩家数据', 'error');
     }
 }
 
@@ -537,6 +596,11 @@ function submitRegistration() {
     saveScores(scores);
     
     state.currentPlayer = player;
+    
+    // ============================================
+    // 新增：保存身份凭证到本地
+    // ============================================
+    localStorage.setItem('bingo_my_card', state.currentCard);
     
     showToast('Registration successful 注册成功！', 'success');
     showBingoCard();
