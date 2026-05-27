@@ -286,8 +286,19 @@ function showBingoCard() {
 
 function showVerifyPage() {
     showPage('verify');
-    document.getElementById('verify-card-input').value = '';
-    document.getElementById('verify-card-preview').classList.add('hidden');
+    
+    // ============================================
+    // 优化：如果用户已登录，自动填充并加载卡片
+    // ============================================
+    if (state.currentCard) {
+        document.getElementById('verify-card-input').value = state.currentCard;
+        // 自动调用加载函数，直接显示卡片内容
+        loadVerifyCard();
+    } else {
+        // 如果没有登录（例如管理员直接访问），则显示空输入框
+        document.getElementById('verify-card-input').value = '';
+        document.getElementById('verify-card-preview').classList.add('hidden');
+    }
 }
 
 function hideVerifyPage() {
