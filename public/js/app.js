@@ -238,7 +238,7 @@ function savePlayers(players) {
     syncDataToServer('players', players);
 }
 
-function saveSettings(settings) {
+function saveSettingsData(settings) {
     localStorage.setItem('bingo_settings', JSON.stringify(settings));
     syncDataToServer('settings', settings);
 }
@@ -1889,9 +1889,9 @@ function saveSettings() {
         fullCardBonus: parseInt(document.getElementById('setting-full-card').value),
         fullCardBonusEnabled: document.getElementById('setting-full-card-enabled').checked
     };
-    
-    saveSettings(settings);
-    showToast('Settings saved 设置已保存', 'success');
+    // 2. 调用重命名后的辅助函数保存设置
+    saveSettingsData(settings);
+
     // ============================================
     // 2. 新增：根据新设置重新计算所有玩家的分数
     // ============================================
