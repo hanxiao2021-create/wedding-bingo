@@ -124,7 +124,7 @@
                         <div class="mt-6 pt-6 border-t border-white/30">
                             <p class="text-center text-sm text-sage-600">
                                 <i class="fas fa-info-circle mr-1"></i>
-                                请输入您座位上的 Bingo 卡号
+                                Enter your BINGO [Card Number] / 输入BINGO卡片上的「卡号」
                             </p>
                         </div>
                     </div>
@@ -164,10 +164,18 @@
                                     class="input-field w-full px-4 py-3 rounded-2xl text-gray-700 placeholder-gray-400 focus:outline-none">
                             </div>
                             
-                            <button onclick="submitRegistration()" class="btn-primary w-full py-3 rounded-2xl text-white font-semibold shadow-lg">
-                                <i class="fas fa-check mr-2"></i>
-                                Start Game 开始游戏
-                            </button>
+                           <!-- 修改为两个并排的按钮 -->
+                           <div class="flex gap-3">
+                               <!-- 新增：返回主界面按钮 -->
+                               <button onclick="showLanding()" class="flex-1 glass py-3 rounded-2xl text-sage-700 font-medium hover:bg-white/40 transition-all">
+                                   Return 返回
+                               </button>
+                               
+                               <!-- 原有的开始游戏按钮 -->
+                               <button onclick="submitRegistration()" class="flex-1 btn-primary py-3 rounded-2xl text-white font-semibold">
+                                   Start Game 开始游戏
+                               </button>
+                           </div>
                         </div>
                     </div>
                 </div>
@@ -228,7 +236,8 @@
             <div id="verify-page" class="hidden fade-in">
                 <div class="max-w-md mx-auto">
                     <div class="glass rounded-3xl p-6 shadow-xl">
-                        <div class="flex items-center justify-between mb-6">
+                        <!-- 标题栏 -->
+                        <div class="flex items-center justify-between mb-4">
                             <h2 class="font-display text-2xl font-bold text-blush-700">
                                 Verify 验证
                             </h2>
@@ -237,6 +246,15 @@
                             </button>
                         </div>
                         
+                        <!-- ============================================ -->
+                        <!-- 新增：操作提示文字区域 -->
+                        <!-- ============================================ -->
+                        <div class="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-2xl mb-6 text-sm">
+                            <p class="font-bold mb-1"><i class="fas fa-info-circle mr-1"></i>Tip 提示</p>
+                            <p>Click the "Back" button below to return to your Bingo card.</p>
+                            <p>点击下方的“返回”按钮回到您的Bingo卡片。</p>
+                        </div>
+
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-sage-700 mb-2">
@@ -277,9 +295,19 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- ============================================ -->
+                        <!-- 新增：底部返回按钮 -->
+                        <!-- ============================================ -->
+                        <div class="mt-6">
+                            <button onclick="hideVerifyPage()" class="w-full glass py-3 rounded-2xl text-sage-700 font-medium hover:bg-white/40 transition-all">
+                                <i class="fas fa-arrow-left mr-2"></i>Back to Card 返回卡片
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
+
 
             <!-- Leaderboard Page -->
             <div id="leaderboard-page" class="hidden fade-in">
